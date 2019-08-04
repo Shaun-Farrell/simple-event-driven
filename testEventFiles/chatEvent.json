@@ -1,0 +1,5 @@
+{
+  "eventGroup" : "chat",
+  "eventType": "chatMessage",
+  "payload": { "any": "any1" }
+}
