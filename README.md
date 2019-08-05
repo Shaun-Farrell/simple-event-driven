@@ -1,6 +1,8 @@
 # Simple Event Driven Architecture
 
-Simple example of Event-driven architecture using S3, Lambda, DynamoDB, SNS and AWS CDK for deployment.
+Simple example of Event-driven architecture using S3, Lambda, DynamoDB, SNS and AWS CDK for deployment.  
+
+![event driven architecture](https://cppstorage.s3-eu-west-1.amazonaws.com/github/event-driven-arch.png)  
 
 ### Resources built by this code:
 1. S3 Bucket (with a trigger lambda on file created).
