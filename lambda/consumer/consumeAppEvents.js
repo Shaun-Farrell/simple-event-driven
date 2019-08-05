@@ -116,10 +116,10 @@ exports.handler = async (event, context) => {
         console.log('DynamoD Record: %j', record.dynamodb);
         const isRemove = record.eventName === 'REMOVE';
         const formattedObj = isRemove ? DDBparse({'M':record.dynamodb.OldImage}) : DDBparse({'M':record.dynamodb.NewImage});
-        if (WEBSOCKET_ENDPOINT !== '' && !WEBSOCKET_ENDPOINT.includes('API-ID')){
+        if (WEBSOCKET_ENDPOINT !== '' && !WEBSOCKET_ENDPOINT.includes('API_ID')){
             await fanoutToWS(record, formattedObj);
         }
-        if (!isRemove && formattedObj.publishToTopic && !TOPIC_ARN.includes('ACCOUNT-ID')){
+        if (!isRemove && formattedObj.publishToTopic && !TOPIC_ARN.includes('ACCOUNT_ID')){
             if (formattedObj.publishToTopic === 'app-group') {
                 await publishToSNSTopic('Test from Lambda', `Published for topic: ${formattedObj.publishToTopic}`);
             }
