@@ -117,7 +117,7 @@ exports.handler = async (event, context) => {
         const isRemove = record.eventName === 'REMOVE';
         const formattedObj = isRemove ? DDBparse({'M':record.dynamodb.OldImage}) : DDBparse({'M':record.dynamodb.NewImage});
         if (WEBSOCKET_ENDPOINT !== '' && !WEBSOCKET_ENDPOINT.includes('API-ID')){
-            await fanoutToWS(record, isRemove);
+            await fanoutToWS(record, formattedObj);
         }
         if (!isRemove && formattedObj.publishToTopic && !TOPIC_ARN.includes('ACCOUNT-ID')){
             if (formattedObj.publishToTopic === 'app-group') {
