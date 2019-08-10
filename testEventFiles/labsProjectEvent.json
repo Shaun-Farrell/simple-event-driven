@@ -1,0 +1,9 @@
+{
+  "eventGroup" : "labs",
+  "eventType": "labsProjectCreate",
+  "payload": { 
+    "name": "kaizen",
+    "message": "New Kaizen app available in Labs"
+  },
+  "publishToTopic": "labs-group"
+}

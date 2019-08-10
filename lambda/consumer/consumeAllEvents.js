@@ -3,7 +3,6 @@ const ddbClient = new aws.DynamoDB.DocumentClient({});
 const DDBparse = aws.DynamoDB.Converter.output;
 const TABLE_NAME = process.env.TABLE_NAME || '';
 const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
-const TOPIC_ARN = process.env.TOPIC_ARN || '';
 
 // Post to WebSockets via APIGateway
 function postToAPIGateway(body, path) {
@@ -56,8 +55,10 @@ async function getAllConnections() {
           TableName: TABLE_NAME,
           KeyConditionExpression: 'eventGroup = :grpValue',
           ExpressionAttributeValues: {
-            ':grpValue': 'connection'
-          }
+            ':grpValue': 'connection',
+            // ':isEventsVal': true
+          },
+        //   FilterExpression: 'isEvents = :isEventsVal',
         };
 
         ddbClient.query(params, function(err, data) {
@@ -72,41 +73,29 @@ async function getAllConnections() {
     });
 }
 
-async function fanoutToWS(record, formattedObj) {
+async function fanoutToWS(record, formattedObj, isChat) {
     // Get all active connections and send message
     try {
         const rows = await getAllConnections();
         if (rows.Items){
           for (const item of rows.Items) {
-            await postToAPIGateway(
-                `DynamoDB ${record.eventName}: ${JSON.stringify(formattedObj)}`, 
-                `/dev/@connections/${item.connectionID}`
-            );
+            let connectionMatchesChat = false;
+            if (isChat) {
+                connectionMatchesChat = formattedObj.connectionID === item.connectionID;
+            }
+            if (item.isEvents || connectionMatchesChat) {
+                console.log('sending to connection: ', item.connectionID);
+                await postToAPIGateway(
+                    `DynamoDB ${record.eventName}: ${JSON.stringify(formattedObj)}`, 
+                    `/dev/@connections/${item.connectionID}`
+                );
+            }
           }
         }
     }
     catch (e) {
         console.log('error sending to WS: ', e);
     }
-}
-async function publishToSNSTopic(subject, msg) {
-    return new Promise( (resolve, reject) => {
-        var sns = new aws.SNS({ region: "eu-west-1" });
-        var params = {
-            Subject: subject,
-            Message: msg,
-            TopicArn: TOPIC_ARN
-        };
-        sns.publish(params, function(err, data) {
-            if (err) {
-                console.log('err: ', err);
-                reject(err);
-            } else {
-                console.log(data);
-                resolve(data)
-            }
-        });
-    })
 }
 
 exports.handler = async (event, context) => {
@@ -117,12 +106,8 @@ exports.handler = async (event, context) => {
         const isRemove = record.eventName === 'REMOVE';
         const formattedObj = isRemove ? DDBparse({'M':record.dynamodb.OldImage}) : DDBparse({'M':record.dynamodb.NewImage});
         if (WEBSOCKET_ENDPOINT !== '' && !WEBSOCKET_ENDPOINT.includes('API_ID')){
-            await fanoutToWS(record, formattedObj);
-        }
-        if (!isRemove && formattedObj.publishToTopic && !TOPIC_ARN.includes('ACCOUNT_ID')){
-            if (formattedObj.publishToTopic === 'app-group') {
-                await publishToSNSTopic('Test from Lambda', `Published for topic: ${formattedObj.publishToTopic}`);
-            }
+            const isChat = formattedObj.eventGroup === 'chat';
+            await fanoutToWS(record, formattedObj, isChat);
         }
     }
 
