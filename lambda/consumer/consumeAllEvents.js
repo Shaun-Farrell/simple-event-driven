@@ -3,6 +3,7 @@ const ddbClient = new aws.DynamoDB.DocumentClient({});
 const DDBparse = aws.DynamoDB.Converter.output;
 const TABLE_NAME = process.env.TABLE_NAME || '';
 const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
+const REGION = process.env.REGION || 'eu-west-1';
 
 // Post to WebSockets via APIGateway
 function postToAPIGateway(body, path) {
@@ -10,7 +11,7 @@ function postToAPIGateway(body, path) {
     const prom = new Promise(function(resolve, reject) {
         var esDomain = {
             endpoint: WEBSOCKET_ENDPOINT,
-            region: 'eu-west-1',
+            region: REGION,
         };
         var endpoint =  new aws.Endpoint(esDomain.endpoint);
         var req = new aws.HttpRequest(endpoint);
@@ -56,9 +57,7 @@ async function getAllConnections() {
           KeyConditionExpression: 'eventGroup = :grpValue',
           ExpressionAttributeValues: {
             ':grpValue': 'connection',
-            // ':isEventsVal': true
           },
-        //   FilterExpression: 'isEvents = :isEventsVal',
         };
 
         ddbClient.query(params, function(err, data) {
@@ -83,7 +82,8 @@ async function fanoutToWS(record, formattedObj, isChat) {
             if (isChat) {
                 connectionMatchesChat = formattedObj.connectionID === item.connectionID;
             }
-            if (item.isEvents || connectionMatchesChat) {
+            const isDashboard = item.connType && item.connType === 'events';
+            if (isDashboard || connectionMatchesChat) {
                 console.log('sending to connection: ', item.connectionID);
                 await postToAPIGateway(
                     `DynamoDB ${record.eventName}: ${JSON.stringify(formattedObj)}`, 

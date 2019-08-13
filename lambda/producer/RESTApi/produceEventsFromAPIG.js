@@ -2,6 +2,7 @@ const aws = require('aws-sdk');
 const s3 = new aws.S3({ apiVersion: '2006-03-01' });
 const ddbClient = new aws.DynamoDB.DocumentClient({});
 const TABLE_NAME = process.env.TABLE_NAME || '';
+const shortid = require('shortid');
 
 function getUTCDateTimeString(dt){
     const year = dt.getUTCFullYear();
@@ -14,7 +15,7 @@ function getUTCDateTimeString(dt){
 
     let finalString = `${year}${month >= 10 ? month : '0'+month}${day >= 10 ? day : '0'+day}`;
     finalString += `${hours >= 10 ? hours : '0'+hours}${mins >= 10 ? mins : '0'+mins}`;
-    finalString += `${secs >= 10 ? secs : '0'+secs}${ms >= 10 ? ms : '0'+ms}`;
+    finalString += `${secs >= 10 ? secs : '0'+secs}${ms < 10 ? '00'+ms : ms < 100 ? '0'+ms : ms}`;
     return finalString;
 }
 
@@ -29,7 +30,7 @@ async function writeToDDB(postBody) {
 
         const dt = new Date();
         const dateCreated = dt.getTime(); // This should only be dateCreated - these events should be immutable
-        const evTypeWithDate = `${eventType}##${getUTCDateTimeString(dt)}`;
+        const evTypeWithDate = `${eventType}##${getUTCDateTimeString(dt)}${shortid.generate()}`;
         const params = {
             TableName: TABLE_NAME,
             Item: { ...postBody, eventType: evTypeWithDate, dateCreated }

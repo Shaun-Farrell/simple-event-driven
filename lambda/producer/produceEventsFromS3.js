@@ -14,7 +14,7 @@ function getUTCDateTimeString(dt){
 
     let finalString = `${year}${month >= 10 ? month : '0'+month}${day >= 10 ? day : '0'+day}`;
     finalString += `${hours >= 10 ? hours : '0'+hours}${mins >= 10 ? mins : '0'+mins}`;
-    finalString += `${secs >= 10 ? secs : '0'+secs}${ms >= 10 ? ms : '0'+ms}`;
+    finalString += `${secs >= 10 ? secs : '0'+secs}${ms < 10 ? '00'+ms : ms < 100 ? '0'+ms : ms}`;
     return finalString;
 }
 

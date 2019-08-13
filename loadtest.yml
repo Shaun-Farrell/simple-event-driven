@@ -1,14 +1,14 @@
 config:
   target: "https://0gxc2geqo7.execute-api.eu-west-1.amazonaws.com"
   phases:
-    - duration: 3
-      arrivalRate: 10
+    - duration: 1
+      arrivalRate: 100
 scenarios:
   - flow:
       - post:
           url: "/prod/events"
           headers:
-            x-api-key: "APIKEY"
+            x-api-key: "APIKey"
           json:
             eventGroup: "myEventGroup"
             eventType: "myType"

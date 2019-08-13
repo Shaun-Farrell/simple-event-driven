@@ -1,4 +1,5 @@
 secrets.json
+secrets-sf.json
 node_modules
 
 # CDK asset staging directory

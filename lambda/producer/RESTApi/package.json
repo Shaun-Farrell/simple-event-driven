@@ -1,0 +1,7 @@
+{
+  "name": "rest-api",
+  "version": "0.1.0",
+  "dependencies": {
+    "shortid": "^2.2.14"
+  }
+}
