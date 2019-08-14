@@ -1,6 +1,6 @@
 secrets.json
-secrets-sf.json
 node_modules
+testEventFiles
 
 # CDK asset staging directory
 .cdk.staging
