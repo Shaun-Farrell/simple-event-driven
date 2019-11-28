@@ -1,5 +1,6 @@
 const fs = require("fs");
-const https = require("https");
+var aws = require("aws-sdk");
+const ddbClient = new aws.DynamoDB.DocumentClient({});
 let html;
 
 function loadHtml() {
@@ -18,7 +19,7 @@ function generateTableRow(name, count) {
     </tr>`;
 }
 
-function generateTable(data) {
+function generateTable() {
   return `<table class="table">
   <thead>
     <tr>
@@ -32,61 +33,72 @@ function generateTable(data) {
 </table>`;
 }
 
-function getData(url) {
-  return new Promise(function(resolve, reject) {
-    let data = "";
-    https
-      .get(
-        url,
-        {
-          headers: { "x-api-key": "qYwvX51WLHaKNMdswJOzkJ4B5wRHxEj9OP2dH9De" }
-        },
-        resp => {
-          // A chunk of data has been recieved.
-          resp.on("data", chunk => {
-            data += chunk;
-          });
+async function readFromDDB(pk, sk, tableName, pkName, skName) {
+  return new Promise((resolve, reject) => {
+    const params = {
+      TableName: tableName,
+      KeyConditionExpression: `${pkName} = :grpValue`,
+      ExpressionAttributeValues: {
+        ":grpValue": pk
+      }
+    };
 
-          // The whole response has been received. Print out the result.
-          resp.on("end", () => {
-            resolve(data);
-          });
-        }
-      )
-      .on("error", err => {
+    if (sk) {
+      params.ExpressionAttributeValues[`:${skName}`] = sk;
+      params.KeyConditionExpression += ` and begins_with(${skName}, :${skName})`;
+    }
+
+    ddbClient.query(params, function(err, data) {
+      if (err) {
+        console.log("Error", err);
         reject(err);
-      });
+      } else {
+        console.log("Success", data);
+        resolve(data);
+      }
+    });
   });
 }
 
 module.exports.handler = async (event, context) => {
   const template = loadHtml();
-  const eventString = JSON.stringify(event);
-  const { queryStringParameters } = event;
-  const { pk, sk } = queryStringParameters || {};
-  // Use these query params if set to filter results
-
-  const data = await getData(
-    `https://api.nrdigital.co/v1/events/aggregates?pk=${pk ||
-      "totalCount"}&sk=${sk || ""}`
-  );
-  const parsedData = JSON.parse(data);
-  const rowData = parsedData.map(rec => {
-    return generateTableRow(rec.sortKey, rec.count);
-  });
-  const tableData = generateTable(parsedData).replace(
-    "##ROWDATA##",
-    rowData.join("")
-  );
-  const res = template.replace("##TABLE##", tableData);
 
   const response = {
     statusCode: 200,
     headers: {
       "content-type": "text/html; charset=UTF-8"
-    },
-    body: res
+    }
   };
 
-  return response;
+  const { queryStringParameters } = event;
+  const { pk, sk, agg } = queryStringParameters || {};
+
+  if (!pk) {
+    response.body = "pk required";
+    response.statusCode = 400;
+    return response;
+  }
+
+  const pkName = agg ? "partitionKey" : "eventGroup";
+  const skName = agg ? "sortKey" : "eventType";
+  const tableName = agg ? "aggregates" : "event-items";
+
+  try {
+    const data = await readFromDDB(pk, sk, tableName, pkName, skName);
+    const rowData = data.Items.map(rec => {
+      if (agg) {
+        return generateTableRow(rec.sortKey, rec.count);
+      } else {
+        return generateTableRow(rec.eventType, rec.eventGroup);
+      }
+    });
+    const tableData = generateTable().replace("##ROWDATA##", rowData.join(""));
+    const res = template.replace("##TABLE##", tableData);
+    response.body = res;
+    return response;
+  } catch (error) {
+    response.body = JSON.stringify(error);
+    response.statusCode = 400;
+    return response;
+  }
 };
