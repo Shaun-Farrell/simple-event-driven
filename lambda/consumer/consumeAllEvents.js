@@ -37,7 +37,7 @@ async function writeToAggregateTable(formattedObj, combinedKey) {
   });
 }
 
-// TODO: write errors back to main DB table as error event.
+// TODO: write errors back to main DB table as error events.
 
 exports.handler = async (event, context) => {
   const eventGroupCountMap = {};
