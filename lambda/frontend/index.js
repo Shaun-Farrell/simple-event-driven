@@ -12,19 +12,48 @@ function loadHtml() {
   return html;
 }
 
-function generateTableRow(name, count) {
+function generateAggTableRow(name, count) {
+  const parts = name.split("##");
+  let nameLink = name;
+  if (parts.length > 1) {
+    nameLink = `<a href="/prod/events?pk=${parts[0]}&sk=${parts[1]}">${name}</a>`;
+  }
+
   return `<tr>
-    <td>${name}</td>
+    <td>${nameLink}</td>
     <td>${count}</td>
     </tr>`;
+}
+
+function generateTableRow(name, sk, pl) {
+  return `<tr>
+    <td>${name}</td>
+    <td>${sk}</td>
+    <td>${JSON.stringify(pl)}</td>
+    </tr>`;
+}
+
+function generateAggTable() {
+  return `<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    ##ROWDATA##
+  </tbody>
+</table>`;
 }
 
 function generateTable() {
   return `<table class="table">
   <thead>
     <tr>
-      <th scope="col">Name</th>
-      <th scope="col">Count</th>
+      <th scope="col">Event Group</th>
+      <th scope="col">Event Type</th>
+      <th scope="col">Payload</th>
     </tr>
   </thead>
   <tbody>
@@ -85,15 +114,30 @@ module.exports.handler = async (event, context) => {
 
   try {
     const data = await readFromDDB(pk, sk, tableName, pkName, skName);
+
     const rowData = data.Items.map(rec => {
       if (agg) {
-        return generateTableRow(rec.sortKey, rec.count);
+        return generateAggTableRow(rec.sortKey, rec.count);
       } else {
-        return generateTableRow(rec.eventType, rec.eventGroup);
+        return generateTableRow(rec.eventType, rec.eventGroup, rec.payload);
       }
     });
-    const tableData = generateTable().replace("##ROWDATA##", rowData.join(""));
-    const res = template.replace("##TABLE##", tableData);
+
+    let tableData;
+
+    if (agg) {
+      tableData = generateAggTable().replace("##ROWDATA##", rowData.join(""));
+    } else {
+      tableData = generateTable().replace("##ROWDATA##", rowData.join(""));
+    }
+
+    // const tableData = generateTable().replace("##ROWDATA##", rowData.join(""));
+
+    const title = agg ? "Aggregates" : "Events";
+    const res = template
+      .replace("##TABLE##", tableData)
+      .replace("##TITLE##", title);
+
     response.body = res;
     return response;
   } catch (error) {

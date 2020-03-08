@@ -1,6 +1,0 @@
-{
-  "eventGroup" : "app",
-  "eventType": "appFeedback",
-  "payload": { "test": "test1" },
-  "publishToTopic": "app-group"
-}

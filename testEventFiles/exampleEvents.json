@@ -1,0 +1,32 @@
+[
+  {
+    "eventGroup": "labs",
+    "eventType": "appFeedback",
+    "payload": { "author": "s@s.com", "comment": "app is great" },
+    "publishToTopic": "labs-group"
+  },
+  {
+    "eventGroup": "CodedPlanet",
+    "eventType": "Analytics##Homepage",
+    "payload": {},
+    "publishToTopic": "analytics-group"
+  },
+  {
+    "eventGroup": "analytics",
+    "eventType": "CPW_Homepage_View",
+    "payload": {},
+    "publishToTopic": "analytics-group"
+  },
+  {
+    "eventGroup": "chat",
+    "eventType": "chatMessage",
+    "payload": { "any": "any1" },
+    "publishToTopic": "chat-group"
+  },
+  {
+    "eventGroup": "heartbeat",
+    "eventType": "CPW_UP",
+    "payload": {},
+    "publishToTopic": "heartbeat-group"
+  }
+]
